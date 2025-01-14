@@ -1,0 +1,110 @@
+---
+http:
+  routers:
+    site-rtr:
+      rule: Host(`site.satcom-server.com`)
+      entryPoints: [websecure]
+      # middlewares: [https-redirect]
+      service: site-svc
+      tls:
+        certresolver: le
+        domains:
+          - main: site.satcom-server.com
+
+  serversTransports:
+    pve:
+      insecureSkipVerify: true
+
+  services:
+    site-svc:
+      loadBalancer:
+        servers:
+          - url: http://192.168.1.101:81
+          - url: http://192.168.1.102:81
+          - url: http://192.168.1.103:81
+        passHostHeader: true
+
+  middlewares:
+    default:
+      chain:
+        middlewares: [security-headers, gzip]
+
+    full-secure:
+      chain:
+        middlewares: [security-headers, cors, rate-limit, https-redirect]
+
+    security-headers:
+      headers:
+        sslRedirect: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 63072000
+        referrerPolicy: same-origin
+        frameDeny: true
+        featurePolicy: camera 'none'; microphone 'none'; geolocation 'none'
+        permissionsPolicy: interest-cohort=()
+        customResponseHeaders:
+          X-Content-Type-Options: nosniff
+          X-Frame-Options: DENY
+          X-XSS-Protection: 1; mode=block
+          X-Robots-Tag: none,noarchive,nosnippet,notranslate,noimageindex
+          X-Forwarded-Proto: https
+          server: ""
+    cors:
+      headers:
+        accessControlAllowMethods: [GET, POST, PUT, DELETE, OPTIONS]
+        accessControlAllowHeaders: [Content-Type, Authorization]
+        accessControlAllowOriginList: ["*"] # Corrected field name
+        accessControlAllowCredentials: true
+        accessControlMaxAge: 100
+    gzip:
+      compress:
+        excludedContentTypes: [text/event-stream]
+    rate-limit:
+      rateLimit:
+        average: 150
+        burst: 80
+    https-redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
+tls:
+  options:
+    modern:
+      minVersion: VersionTLS13
+      sniStrict: true
+    intermediate:
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+      minVersion: VersionTLS12
+      sniStrict: true
+    old:
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+        - TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA
+        - TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA
+        - TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA
+        - TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA
+        - TLS_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_RSA_WITH_AES_128_CBC_SHA256
+        - TLS_RSA_WITH_AES_128_CBC_SHA
+        - TLS_RSA_WITH_AES_256_CBC_SHA
+        - TLS_RSA_WITH_3DES_EDE_CBC_SHA
+      minVersion: TLSv1
+      sniStrict: true

@@ -24,8 +24,11 @@ services:
       - letsencrypt:/letsencrypt
     networks:
       - traefik-net
+
   crawler:
     image: satcomx00/python-crawler:latest
+    ports:
+      - 81:5000
     deploy:
       mode: replicated
       replicas: 3
@@ -33,12 +36,14 @@ services:
         max_replicas_per_node: 1
     environment:
       - REDIS_URL=redis://redis-master:6379
-      - REDIS_HOST=redis-slave
-      - REDIS_PORT=6379  # Fixed port number
+      - REDIS_PORT=6379
       - REDIS_PASSWORD=
       - REDIS_DB=0
       - REDIS_RETRY_COUNT=3
       - REDIS_RETRY_DELAY=1
+      - REDIS_HOST="redis-master"
+      - REDIS_SLAVE_HOST="redis-slave"
+
     depends_on:
       - redis-master
     networks:
@@ -46,13 +51,12 @@ services:
       - redis-net
     labels:
       - "traefik.enable=true"
+
   redis-master:
     image: redis:latest
     command: >
       redis-server 
       --port 6379
-      --requirepass ${REDIS_PASSWORD:-redispassword}
-      --masterauth ${REDIS_PASSWORD:-redispassword}
     networks:
       - redis-net
     deploy:
@@ -61,16 +65,13 @@ services:
       placement:
         constraints:
           - node.role == manager
-    volumes:
-      - redis-master-data:/data
+
   redis-slave:
     image: redis:latest
     command: >
       redis-server
       --port 6379
       --slaveof redis-master 6379
-      --requirepass ${REDIS_PASSWORD:-redispassword}
-      --masterauth ${REDIS_PASSWORD:-redispassword}
     networks:
       - redis-net
     deploy:
@@ -79,13 +80,13 @@ services:
       placement:
         constraints:
           - node.role == worker
-    volumes:
-      - redis-slave-data:/data
+
 networks:
   traefik-net:
     driver: overlay
   redis-net:
     driver: overlay
+
 volumes:
   etc_traefik:
   traefik:

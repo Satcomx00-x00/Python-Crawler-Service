@@ -1,0 +1,47 @@
+---
+log:
+  level: INFO
+
+api:
+  dashboard: true
+  insecure: true
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: le
+        domains:
+          - main: satcom-server.com
+            sans:
+              - '*.satcom-server.com'
+providers:
+  providersThrottleDuration: 2s
+  docker:
+    watch: true
+    endpoint: unix:///var/run/docker.sock
+    defaultRule: Host(`{{ lower (trimPrefix `/` .Name )}}.satcom-server.com`)
+    # swarmModeRefreshSeconds: 15s
+    exposedByDefault: false
+  file:
+    directory: /traefik-config
+    watch: true
+
+certificatesResolvers:
+  le:
+    acme:
+      email: master@satcom-server.com
+      storage: /letsencrypt/acme.json
+      dnsChallenge:
+        provider: ovh
+        resolvers: 
+          - 1.1.1.1
+          - 8.8.8.8
