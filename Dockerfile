@@ -1,36 +1,27 @@
-# Use Python 3.11 slim image as base
 FROM python:3.12-slim
 
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Install dependencies in a single layer
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        redis-tools && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first to leverage Docker cache
+# Copy and install requirements
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Copy entrypoint script and make it executable
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
 
 # Copy application code
 COPY . .
 
-# # Create non-root user for security
-# RUN useradd -m crawler && \
-#     chown -R crawler:crawler /app
-
-# USER crawler
-
-# Expose the Flask port
-EXPOSE 5000
-
-# Set environment variables
-ENV FLASK_ENV=production
-ENV PYTHONUNBUFFERED=1
-
-# Run the application
-CMD ["python website.py"]
+ENTRYPOINT ["./entrypoint.sh"]
