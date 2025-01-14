@@ -16,11 +16,21 @@ class RedisStorage:
         """Get Redis connection with retry logic"""
         retry_count = int(os.getenv('REDIS_RETRY_COUNT', 3))
         retry_delay = int(os.getenv('REDIS_RETRY_DELAY', 1))
+        default_port = 6379
         
         redis_hosts = [
-            {'host': os.getenv('REDIS_HOST', 'redis-slave'), 'port': int(os.getenv('REDIS_PORT', 6379))},
-            {'host': 'redis-slave', 'port': 6379},  # Docker Compose service name
-            {'host': 'redis-master', 'port': 6379}  # Localhost fallback
+            {
+                'host': os.getenv('REDIS_HOST', 'redis-slave'),
+                'port': int(os.getenv('REDIS_PORT', default_port))
+            },
+            {
+                'host': 'redis-slave',
+                'port': default_port
+            },
+            {
+                'host': 'redis-master',
+                'port': default_port
+            }
         ]
 
         last_error = None

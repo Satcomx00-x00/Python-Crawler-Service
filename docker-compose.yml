@@ -34,7 +34,7 @@ services:
     environment:
       - REDIS_URL=redis://redis-master:6379
       - REDIS_HOST=redis-slave
-      - REDIS_PORT=6379
+      - REDIS_PORT=6379  # Fixed port number
       - REDIS_PASSWORD=
       - REDIS_DB=0
       - REDIS_RETRY_COUNT=3
