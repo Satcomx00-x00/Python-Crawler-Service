@@ -17,9 +17,15 @@
 
         <main class="content">
             <div class="history-list">
-                <h1>Scan History</h1>
+                <div class="history-controls">
+                    <h1>Scan History</h1>
+                    <button id="deleteSelected" class="delete-selected-btn" disabled>Delete Selected</button>
+                </div>
                 {% for crawl in crawls %}
                 <div class="history-item">
+                    <div class="history-select">
+                        <input type="checkbox" class="select-crawl" data-id="{{ crawl.id }}">
+                    </div>
                     <div class="history-content" onclick="window.location='{{ url_for('history_detail', crawl_id=crawl.id) }}'">
                         <h3>{{ crawl.url }}</h3>
                         <p>Scanned: {{ crawl.time }}</p>
@@ -33,10 +39,32 @@
             </div>
 
             <script>
+                const deleteSelectedBtn = document.getElementById('deleteSelected');
+                const checkboxes = document.querySelectorAll('.select-crawl');
+
+                function updateDeleteButton() {
+                    const selectedCount = document.querySelectorAll('.select-crawl:checked').length;
+                    deleteSelectedBtn.disabled = selectedCount === 0;
+                    deleteSelectedBtn.textContent = `Delete Selected (${selectedCount})`;
+                }
+
+                checkboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', updateDeleteButton);
+                });
+
+                deleteSelectedBtn.addEventListener('click', () => {
+                    const selectedIds = Array.from(document.querySelectorAll('.select-crawl:checked'))
+                        .map(cb => cb.dataset.id);
+                    
+                    if (selectedIds.length && confirm(`Are you sure you want to delete ${selectedIds.length} items?`)) {
+                        window.location.href = '{{ url_for("delete_multiple") }}?ids=' + selectedIds.join(',');
+                    }
+                });
+
                 function deleteCrawl(crawlId, event) {
                     event.stopPropagation();
                     if (confirm('Are you sure you want to delete this scan?')) {
-                        window.location.href = '{{ url_for("delete", crawl_id="") }}' + crawlId;
+                        window.location.href = '{{ url_for("delete_crawl", crawl_id="") }}' + crawlId;
                     }
                 }
             </script>

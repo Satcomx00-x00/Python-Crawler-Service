@@ -51,7 +51,12 @@ class RedisStorage:
                 'meta_tags': json.dumps(page['meta_tags']),
                 'headers': json.dumps(page['headers']),
                 'timestamp': page['timestamp'],
-                'health_check': json.dumps(page['health_check'])
+                'health_check': json.dumps(page['health_check']),
+                'seo_metrics': json.dumps(page.get('seo_metrics', {})),
+                'social_links': json.dumps(page.get('social_links', {})),
+                'performance_metrics': json.dumps(page.get('performance_metrics', {})),
+                'accessibility': json.dumps(page.get('accessibility', {})),
+                'technologies': json.dumps(page.get('technologies', {}))
             }
             
             # Store page data in Redis
@@ -81,12 +86,34 @@ class RedisStorage:
             page_data = self.redis_client.hgetall(page_key)
             
             # Convert stored strings back to original data types
-            page_data['internal_links'] = json.loads(page_data['internal_links'])
-            page_data['external_links'] = json.loads(page_data['external_links'])
-            page_data['top_words'] = json.loads(page_data['top_words'])
-            page_data['meta_tags'] = json.loads(page_data['meta_tags'])
-            page_data['headers'] = json.loads(page_data['headers'])
-            page_data['health_check'] = json.loads(page_data['health_check'])
+            page_data['internal_links'] = json.loads(page_data.get('internal_links', '[]'))
+            page_data['external_links'] = json.loads(page_data.get('external_links', '[]'))
+            page_data['top_words'] = json.loads(page_data.get('top_words', '{}'))
+            page_data['meta_tags'] = json.loads(page_data.get('meta_tags', '{}'))
+            page_data['headers'] = json.loads(page_data.get('headers', '{}'))
+            page_data['health_check'] = json.loads(page_data.get('health_check', '{}'))
+            page_data['seo_metrics'] = json.loads(page_data.get('seo_metrics', '{}'))
+            page_data['social_links'] = json.loads(page_data.get('social_links', '{}'))
+            page_data['performance_metrics'] = json.loads(page_data.get('performance_metrics', '{}'))
+            page_data['accessibility'] = json.loads(page_data.get('accessibility', '{}'))
+            page_data['technologies'] = json.loads(page_data.get('technologies', '{}'))
+            page_data['security_headers'] = json.loads(page_data.get('security_headers', '{}'))
+            
+            # Ensure all required fields exist with default values
+            page_data.setdefault('url', '')
+            page_data.setdefault('title', 'No title')
+            page_data.setdefault('status_code', 0)
+            page_data.setdefault('load_time', 0)
+            page_data.setdefault('content_length', 0)
+            page_data.setdefault('images_found', 0)
+            page_data.setdefault('word_count', 0)
+            page_data.setdefault('scripts', 0)
+            page_data.setdefault('stylesheets', 0)
+            page_data.setdefault('forms', 0)
+            page_data.setdefault('responsive_meta', False)
+            page_data.setdefault('h1_count', 0)
+            page_data.setdefault('text_to_html_ratio', 0)
+            page_data.setdefault('languages', [])
             
             pages.append(page_data)
         

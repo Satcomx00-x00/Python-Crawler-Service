@@ -78,5 +78,14 @@ def delete_crawl(crawl_id):
     redis_storage.delete_crawl_data(decoded_id)
     return redirect(url_for('history'))
 
+@app.route('/delete-multiple')
+def delete_multiple():
+    ids = request.args.get('ids', '').split(',')
+    for crawl_id in ids:
+        if crawl_id:
+            decoded_id = unquote(crawl_id)
+            redis_storage.delete_crawl_data(decoded_id)
+    return redirect(url_for('history'))
+
 if __name__ == '__main__':
     app.run(debug=True)
