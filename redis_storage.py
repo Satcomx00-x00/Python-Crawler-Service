@@ -3,8 +3,8 @@ import json
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-from redis.sentinel import Sentinel
 from redis.exceptions import ConnectionError
+import time
 
 class RedisStorage:
     def __init__(self):
@@ -12,34 +12,47 @@ class RedisStorage:
         self.redis_client = self._get_redis_connection()
 
     def _get_redis_connection(self):
-        """Get Redis connection with retry and fallback logic"""
-        redis_hosts = [
-            {'host': 'redis-master', 'port': 6379},  
-            {'host': 'redis-slave', 'port': 6379}
-        ]
-        password = os.getenv('REDIS_PASSWORD', 'redispassword')
-
-        for redis_config in redis_hosts:
-            try:
-                client = redis.Redis(
-                    host=redis_config['host'],
-                    port=redis_config['port'],
-                    password=password,
-                    db=int(os.getenv('REDIS_DB', 0)),
-                    decode_responses=True,
-                    socket_timeout=1,
-                    retry_on_timeout=True,
-                    health_check_interval=5
-                )
-                # Test connection
-                client.ping()
-                print(f"Connected to Redis at {redis_config['host']}:{redis_config['port']}")
-                return client
-            except (ConnectionError, redis.exceptions.TimeoutError):
-                continue
-
-        raise ConnectionError("Could not connect to any Redis instance")
+        """Get Redis connection with retry logic"""
+        retry_count = int(os.getenv('REDIS_RETRY_COUNT', 3))
+        retry_delay = int(os.getenv('REDIS_RETRY_DELAY', 1))
         
+        redis_hosts = [
+            {'host': os.getenv('REDIS_HOST', 'localhost'), 'port': int(os.getenv('REDIS_PORT', 6379))},
+            {'host': 'redis', 'port': 6379},  # Docker Compose service name
+            {'host': '127.0.0.1', 'port': 6379}  # Localhost fallback
+        ]
+
+        last_error = None
+        for attempt in range(retry_count):
+            for redis_config in redis_hosts:
+                try:
+                    client = redis.Redis(
+                        host=redis_config['host'],
+                        port=redis_config['port'],
+                        password=os.getenv('REDIS_PASSWORD', ''),
+                        db=int(os.getenv('REDIS_DB', 0)),
+                        decode_responses=True,
+                        socket_timeout=2,
+                        socket_connect_timeout=2,
+                        retry_on_timeout=True,
+                        health_check_interval=5
+                    )
+                    # Test connection
+                    client.ping()
+                    print(f"Successfully connected to Redis at {redis_config['host']}:{redis_config['port']}")
+                    return client
+                except (ConnectionError, redis.exceptions.TimeoutError) as e:
+                    last_error = e
+                    print(f"Failed to connect to Redis at {redis_config['host']}:{redis_config['port']}")
+                    continue
+            
+            if attempt < retry_count - 1:
+                wait_time = retry_delay * (attempt + 1)
+                print(f"Retrying in {wait_time} seconds...")
+                time.sleep(wait_time)
+
+        raise ConnectionError(f"Could not connect to any Redis instance after {retry_count} attempts. Last error: {str(last_error)}")
+
     def _ensure_connection(self):
         """Ensure Redis connection is alive, reconnect if needed"""
         try:
@@ -48,11 +61,28 @@ class RedisStorage:
             self.redis_client = self._get_redis_connection()
             
     def store_crawl_data(self, start_url, visited_pages):
-        """Store crawling results in Redis with connection check"""
+        """Store crawling results in Redis with duplicate prevention"""
         self._ensure_connection()
         
-        timestamp = int(datetime.now().timestamp())
-        crawl_id = f"crawl:{start_url}:{timestamp}"
+        # Normalize URL for consistent comparison
+        normalized_url = start_url.rstrip('/')
+        
+        # Check for existing crawl with same URL within last 24 hours
+        existing_crawls = self.redis_client.lrange("all_crawls", 0, -1)
+        current_time = datetime.now().timestamp()
+        
+        for crawl_id in existing_crawls:
+            if normalized_url in crawl_id:
+                summary = self.redis_client.hgetall(f"{crawl_id}:summary")
+                if summary:
+                    crawl_time = datetime.fromisoformat(summary['crawl_time']).timestamp()
+                    # If crawl exists within last 24 hours, return existing crawl_id
+                    if (current_time - crawl_time) < 86400:  # 24 hours in seconds
+                        return crawl_id
+
+        # If no recent duplicate found, create new crawl
+        timestamp = int(current_time)
+        crawl_id = f"crawl:{normalized_url}:{timestamp}"
         
         if not visited_pages or not isinstance(visited_pages, list):
             return None
@@ -102,13 +132,19 @@ class RedisStorage:
                     pipe.hset(page_key, mapping=page_data)
                     pipe.rpush(f"{crawl_id}:pages", page_key)
                 
-                pipe.rpush("all_crawls", crawl_id)
-                pipe.execute()
+                # Add to crawls list and set expiration
+                pipe.lpush("all_crawls", crawl_id)
+                # Set TTL for all keys (optional, adjust expiration time as needed)
+                pipe.expire(f"{crawl_id}:summary", 86400 * 7)  # 7 days
+                pipe.expire(f"{crawl_id}:pages", 86400 * 7)  # 7 days
                 
+                pipe.execute()
                 return crawl_id
+                
             except (ConnectionError, redis.exceptions.TimeoutError):
                 self.redis_client = self._get_redis_connection()
                 raise
+
     def get_crawl_data(self, crawl_id):
         """Retrieve crawling results from Redis"""
         if not self.redis_client.exists(f"{crawl_id}:summary"):

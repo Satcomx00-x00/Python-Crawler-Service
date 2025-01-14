@@ -28,6 +28,13 @@
             <input type="number" name="delay" id="delay" value="1" min="1" max="10">
         </div>
         
+        <div class="form-group">
+            <label for="force_refresh">
+                <input type="checkbox" name="force_refresh" id="force_refresh" value="true">
+                Force Refresh (Ignore cached results)
+            </label>
+        </div>
+        
         <button type="submit">Crawl</button>
     </form>
     {% if error %}

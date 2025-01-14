@@ -4,9 +4,27 @@ from main import AdvancedWebCrawler
 from redis_storage import RedisStorage
 import asyncio
 from urllib.parse import quote, unquote
+from redis.exceptions import ConnectionError
+import sys
 
 app = Flask(__name__)
-redis_storage = RedisStorage()
+redis_storage = None
+
+def init_redis():
+    try:
+        return RedisStorage()
+    except ConnectionError as e:
+        print(f"Failed to connect to Redis: {e}")
+        print("Make sure Redis is running and accessible")
+        return None
+
+@app.before_request
+def check_redis():
+    global redis_storage
+    if redis_storage is None:
+        redis_storage = init_redis()
+    if redis_storage is None:
+        return "Redis connection is not available", 503
 
 URL_PATTERN = re.compile(
     r'^https?://'
@@ -26,6 +44,7 @@ def index():
 @app.route('/crawl', methods=['POST'])
 def crawl():
     url = request.form.get('url', '').strip()
+    force_refresh = request.form.get('force_refresh') == 'true'
     
     if not url or not validate_url(url):
         return render_template('index.html', error="Invalid URL format")
@@ -36,6 +55,17 @@ def crawl():
         max_workers = int(request.form.get('max_workers', 3))
         delay = int(request.form.get('delay', 1))
         
+        # Check for existing recent crawl if not forcing refresh
+        if not force_refresh:
+            normalized_url = url.rstrip('/')
+            existing_crawls = redis_storage.redis_client.lrange("all_crawls", 0, -1)
+            for crawl_id in existing_crawls:
+                if normalized_url in crawl_id:
+                    data = redis_storage.get_crawl_data(crawl_id)
+                    if data and data['page_data']:
+                        return render_template('results.html', results=data['page_data'][0])
+        
+        # Continue with new crawl if no existing data or force refresh
         crawler = AdvancedWebCrawler(url, 
                                    max_retries=max_retries, 
                                    delay=delay, 
@@ -96,4 +126,7 @@ def delete_multiple():
     return redirect(url_for('history'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    redis_storage = init_redis()  # Initial connection attempt
+    if redis_storage is None:
+        print("Warning: Redis connection is not available. Some features may not work.")
+    app.run(debug=True, port=5000, host='0.0.0.0')
