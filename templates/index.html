@@ -1,53 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>URL Crawler</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    </head>
+{% block title %}URL Crawler{% endblock %}
 
-    <body>
-        <nav class="nav-menu">
-            <h2>Web Crawler</h2>
-            <a href="{{ url_for('index') }}" class="active">New Scan</a>
-            <a href="{{ url_for('history') }}">History</a>
-        </nav>
+{% block content %}
+<div class="form-container">
+    <h1>URL Crawler</h1>
+    <form action="{{ url_for('crawl') }}" method="post">
+        <input type="url" name="url" placeholder="Enter URL (e.g., https://example.com)" required>
         
-        <main class="content">
-            <div class="form-container">
-                <h1>URL Crawler</h1>
-                <form action="{{ url_for('crawl') }}" method="post">
-                    <input type="url" name="url" placeholder="Enter URL (e.g., https://example.com)" required>
-                    
-                    <div class="form-group">
-                        <label for="max_pages">Maximum Pages to Crawl:</label>
-                        <input type="number" name="max_pages" id="max_pages" value="5" min="1" max="50">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="max_retries">Maximum Retries:</label>
-                        <input type="number" name="max_retries" id="max_retries" value="2" min="1" max="5">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="max_workers">Maximum Workers:</label>
-                        <input type="number" name="max_workers" id="max_workers" value="3" min="1" max="10">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="delay">Delay between requests (seconds):</label>
-                        <input type="number" name="delay" id="delay" value="1" min="1" max="10">
-                    </div>
-                    
-                    <button type="submit">Crawl</button>
-                </form>
-                {% if error %}
-                <p class="error">{{ error }}</p>
-                {% endif %}
-            </div>
-        </main>
-    </body>
-
-</html>
+        <div class="form-group">
+            <label for="max_pages">Maximum Pages to Crawl:</label>
+            <input type="number" name="max_pages" id="max_pages" value="5" min="1" max="50">
+        </div>
+        
+        <div class="form-group">
+            <label for="max_retries">Maximum Retries:</label>
+            <input type="number" name="max_retries" id="max_retries" value="2" min="1" max="5">
+        </div>
+        
+        <div class="form-group">
+            <label for="max_workers">Maximum Workers:</label>
+            <input type="number" name="max_workers" id="max_workers" value="3" min="1" max="10">
+        </div>
+        
+        <div class="form-group">
+            <label for="delay">Delay between requests (seconds):</label>
+            <input type="number" name="delay" id="delay" value="1" min="1" max="10">
+        </div>
+        
+        <button type="submit">Crawl</button>
+    </form>
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+</div>
+{% endblock %}

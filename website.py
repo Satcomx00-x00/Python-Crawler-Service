@@ -42,10 +42,18 @@ def crawl():
                                    max_workers=max_workers)
         crawler.crawl(max_pages=max_pages)
         
-        if not crawler.visited_pages:
+        if not crawler.visited_pages or not isinstance(crawler.visited_pages, list):
             return render_template('index.html', error="No data could be retrieved from the URL")
+        
+        # Store results in Redis
+        crawl_id = crawler.save_results()
+        
+        # Get the stored data back from Redis to ensure consistent format
+        data = redis_storage.get_crawl_data(crawl_id)
+        if not data or not data['page_data']:
+            return render_template('index.html', error="Error storing crawl results")
             
-        return render_template('results.html', results=crawler.visited_pages[0])
+        return render_template('results.html', results=data['page_data'][0])
     except Exception as e:
         return render_template('index.html', error=f"Error crawling URL: {str(e)}")
 

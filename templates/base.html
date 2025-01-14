@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Web Crawler{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="theme-dark">
+    <nav class="nav-menu">
+        <h2>Web Crawler</h2>
+        <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="active"{% endif %}>New Scan</a>
+        <a href="{{ url_for('history') }}" {% if request.endpoint == 'history' %}class="active"{% endif %}>History</a>
+        
+        <div class="theme-toggle">
+            <label class="switch">
+                <input type="checkbox" id="themeToggle">
+                <span class="slider round">
+                    <i class="moon">🌙</i>
+                    <i class="sun">☀️</i>
+                </span>
+            </label>
+            <span class="theme-label">Dark Mode</span>
+        </div>
+    </nav>
+
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        const themeLabel = document.querySelector('.theme-label');
+        
+        // Check for saved theme preference
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        body.className = `theme-${savedTheme}`;
+        themeToggle.checked = savedTheme === 'dark';
+        themeLabel.textContent = `${savedTheme.charAt(0).toUpperCase() + savedTheme.slice(1)} Mode`;
+
+        themeToggle.addEventListener('change', () => {
+            const newTheme = themeToggle.checked ? 'dark' : 'light';
+            body.className = `theme-${newTheme}`;
+            localStorage.setItem('theme', newTheme);
+            themeLabel.textContent = `${newTheme.charAt(0).toUpperCase() + newTheme.slice(1)} Mode`;
+        });
+    </script>
+</body>
+</html>

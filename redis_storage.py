@@ -20,13 +20,16 @@ class RedisStorage:
         timestamp = int(datetime.now().timestamp())
         crawl_id = f"crawl:{start_url}:{timestamp}"
         
+        if not visited_pages or not isinstance(visited_pages, list):
+            return None
+
         # Store summary
         summary = {
             'pages_visited': len(visited_pages),
             'start_url': start_url,
             'crawl_time': datetime.now().isoformat(),
-            'total_words': sum(page['word_count'] for page in visited_pages),
-            'total_images': sum(page['images_found'] for page in visited_pages),
+            'total_words': sum(page.get('word_count', 0) for page in visited_pages),
+            'total_images': sum(page.get('images_found', 0) for page in visited_pages),
         }
         
         # Store summary in Redis
@@ -34,24 +37,27 @@ class RedisStorage:
         
         # Store each page data
         for index, page in enumerate(visited_pages):
+            if not isinstance(page, dict):
+                continue
+                
             page_key = f"{crawl_id}:page:{index}"
             
-            # Convert complex data types to strings
+            # Ensure all required fields exist with default values
             page_data = {
-                'url': page['url'],
-                'title': page['title'],
-                'status_code': str(page['status_code']),
-                'load_time': str(page['load_time']),
-                'content_length': str(page['content_length']),
-                'internal_links': json.dumps(page['internal_links']),
-                'external_links': json.dumps(page['external_links']),
-                'images_found': str(page['images_found']),
-                'word_count': str(page['word_count']),
-                'top_words': json.dumps(page['top_words']),
-                'meta_tags': json.dumps(page['meta_tags']),
-                'headers': json.dumps(page['headers']),
-                'timestamp': page['timestamp'],
-                'health_check': json.dumps(page['health_check']),
+                'url': page.get('url', ''),
+                'title': page.get('title', 'No title'),
+                'status_code': str(page.get('status_code', 0)),
+                'load_time': str(page.get('load_time', 0)),
+                'content_length': str(page.get('content_length', 0)),
+                'internal_links': json.dumps(page.get('internal_links', [])),
+                'external_links': json.dumps(page.get('external_links', [])),
+                'images_found': str(page.get('images_found', 0)),
+                'word_count': str(page.get('word_count', 0)),
+                'top_words': json.dumps(page.get('top_words', {})),
+                'meta_tags': json.dumps(page.get('meta_tags', {})),
+                'headers': json.dumps(page.get('headers', {})),
+                'timestamp': page.get('timestamp', datetime.now().isoformat()),
+                'health_check': json.dumps(page.get('health_check', {})),
                 'seo_metrics': json.dumps(page.get('seo_metrics', {})),
                 'social_links': json.dumps(page.get('social_links', {})),
                 'performance_metrics': json.dumps(page.get('performance_metrics', {})),
@@ -86,34 +92,33 @@ class RedisStorage:
             page_data = self.redis_client.hgetall(page_key)
             
             # Convert stored strings back to original data types
-            page_data['internal_links'] = json.loads(page_data.get('internal_links', '[]'))
-            page_data['external_links'] = json.loads(page_data.get('external_links', '[]'))
-            page_data['top_words'] = json.loads(page_data.get('top_words', '{}'))
-            page_data['meta_tags'] = json.loads(page_data.get('meta_tags', '{}'))
-            page_data['headers'] = json.loads(page_data.get('headers', '{}'))
-            page_data['health_check'] = json.loads(page_data.get('health_check', '{}'))
-            page_data['seo_metrics'] = json.loads(page_data.get('seo_metrics', '{}'))
-            page_data['social_links'] = json.loads(page_data.get('social_links', '{}'))
-            page_data['performance_metrics'] = json.loads(page_data.get('performance_metrics', '{}'))
-            page_data['accessibility'] = json.loads(page_data.get('accessibility', '{}'))
-            page_data['technologies'] = json.loads(page_data.get('technologies', '{}'))
-            page_data['security_headers'] = json.loads(page_data.get('security_headers', '{}'))
+            for field in ['internal_links', 'external_links', 'top_words', 'meta_tags', 
+                         'headers', 'health_check', 'seo_metrics', 'social_links', 
+                         'performance_metrics', 'accessibility', 'technologies', 'security_headers']:
+                try:
+                    page_data[field] = json.loads(page_data.get(field, '{}'))
+                except (json.JSONDecodeError, TypeError):
+                    page_data[field] = {}
             
-            # Ensure all required fields exist with default values
-            page_data.setdefault('url', '')
-            page_data.setdefault('title', 'No title')
-            page_data.setdefault('status_code', 0)
-            page_data.setdefault('load_time', 0)
-            page_data.setdefault('content_length', 0)
-            page_data.setdefault('images_found', 0)
-            page_data.setdefault('word_count', 0)
-            page_data.setdefault('scripts', 0)
-            page_data.setdefault('stylesheets', 0)
-            page_data.setdefault('forms', 0)
-            page_data.setdefault('responsive_meta', False)
-            page_data.setdefault('h1_count', 0)
-            page_data.setdefault('text_to_html_ratio', 0)
-            page_data.setdefault('languages', [])
+            # Convert numeric fields
+            for field in ['status_code', 'load_time', 'content_length', 'images_found', 
+                         'word_count', 'scripts', 'stylesheets', 'forms', 'h1_count']:
+                try:
+                    page_data[field] = int(page_data.get(field, 0))
+                except (ValueError, TypeError):
+                    page_data[field] = 0
+            
+            # Convert float fields
+            page_data['text_to_html_ratio'] = float(page_data.get('text_to_html_ratio', 0))
+            
+            # Convert boolean fields
+            page_data['responsive_meta'] = page_data.get('responsive_meta', 'False') == 'True'
+            
+            # Convert list fields
+            try:
+                page_data['languages'] = json.loads(page_data.get('languages', '[]'))
+            except (json.JSONDecodeError, TypeError):
+                page_data['languages'] = []
             
             pages.append(page_data)
         

@@ -280,16 +280,3 @@ class AdvancedWebCrawler:
         self.logger.info(f"Results saved to Redis with crawl ID: {crawl_id}")
         return crawl_id
 
-class RedisStorage:
-    def __init__(self):
-        # ...existing code...
-        pass
-
-    def store_crawl_data(self, page_key, page):
-        # ...existing code...
-        page_data = {
-            # ...existing code...
-            'security_headers': json.dumps(page.get('security_headers', {})),
-            # ...existing code...
-        }
-        # ...existing code...

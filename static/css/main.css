@@ -221,6 +221,40 @@ button:hover {
     --warning: #ff9800;
 }
 
+/* Theme Variables */
+.theme-dark {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #383838;
+    --text-primary: #ffffff;
+    --text-secondary: #b3b3b3;
+    --accent-primary: #4a90e2;
+    --accent-secondary: #357abd;
+    --border-color: #404040;
+    --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --success-color: #4caf50;
+    --error-color: #ff5252;
+    --warning-color: #ffc107;
+}
+
+.theme-light {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e9ecef;
+    --text-primary: #2c3e50;
+    --text-secondary: #6c757d;
+    --accent-primary: #2b6cb0;
+    --accent-secondary: #1e4e8c;
+    --border-color: #e2e8f0;
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    --success-color: #28a745;
+    --error-color: #dc3545;
+    --warning-color: #ffc107;
+    --form-bg: #ffffff;
+    --input-bg: #ffffff;
+    --input-border: #cbd5e0;
+}
+
 /* Reset & Base */
 * {
     margin: 0;
@@ -229,8 +263,8 @@ button:hover {
 }
 
 body {
-    background: var(--bg-dark);
-    color: var(--text);
+    background: var(--bg-primary);
+    color: var(--text-primary);
     font-family: system-ui, -apple-system, sans-serif;
     min-height: 100vh;
     display: flex;
@@ -490,4 +524,255 @@ body {
     .form-control {
         background: rgba(0,0,0,0.2);
     }
+}
+
+/* Theme Switch Styles */
+.theme-switch-wrapper {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--accent-color);
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px var(--accent-color);
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.theme-label {
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+/* Update other existing styles to use theme variables */
+.form-container, .results-container, .history-item {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+input[type="url"], input[type="number"] {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+/* Theme Toggle Styles */
+.theme-toggle {
+    margin-top: auto;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-tertiary);
+    transition: .4s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: var(--bg-secondary);
+    transition: .4s;
+    z-index: 2;
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--accent-primary);
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.moon, .sun {
+    font-size: 16px;
+    line-height: 34px;
+    z-index: 1;
+}
+
+.theme-label {
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+/* Update existing components with new theme variables */
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.nav-menu {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.nav-menu a {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    margin: 0.3rem 0;
+}
+
+.nav-menu a:hover {
+    background: var(--bg-tertiary);
+}
+
+.nav-menu a.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.form-container, .results-container, .history-item {
+    background: var(--bg-secondary);
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border-color);
+}
+
+input[type="url"], input[type="number"], select {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+button {
+    background: var(--accent-primary);
+}
+
+button:hover {
+    background: var(--accent-secondary);
+}
+
+/* Theme Toggle positioning */
+.theme-toggle {
+    margin-top: auto;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Update form styles for light theme */
+.theme-light .form-container {
+    background: var(--form-bg);
+    border: 1px solid var(--border-color);
+}
+
+.theme-light input[type="url"],
+.theme-light input[type="number"],
+.theme-light select {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-primary);
+}
+
+.theme-light .form-group label {
+    color: var(--text-primary);
+}
+
+/* Update nav-menu for light theme */
+.theme-light .nav-menu {
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+}
+
+.theme-light .nav-menu a {
+    color: var(--text-primary);
+}
+
+.theme-light .nav-menu a:hover {
+    background: var(--bg-tertiary);
 }
