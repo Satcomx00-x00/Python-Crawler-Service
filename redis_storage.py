@@ -17,7 +17,7 @@ class RedisStorage:
         retry_delay = int(os.getenv('REDIS_RETRY_DELAY', 1))
         
         redis_hosts = [
-            {'host': os.getenv('REDIS_HOST', 'localhost'), 'port': int(os.getenv('REDIS_PORT', 6379))},
+            {'host': os.getenv('REDIS_HOST', 'redis'), 'port': int(os.getenv('REDIS_PORT', 6379))},
             {'host': 'redis', 'port': 6379},  # Docker Compose service name
             {'host': '127.0.0.1', 'port': 6379}  # Localhost fallback
         ]
