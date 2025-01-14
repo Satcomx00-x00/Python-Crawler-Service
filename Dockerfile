@@ -34,4 +34,4 @@ ENV FLASK_ENV=production
 ENV PYTHONUNBUFFERED=1
 
 # Run the application
-CMD ["flask", "run", "--host=0.0.0.0"]
+CMD ["python website.py"]
