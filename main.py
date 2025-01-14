@@ -9,6 +9,7 @@ import asyncio
 from collections import Counter
 from datetime import datetime
 from redis_storage import RedisStorage
+import re
 
 class AdvancedWebCrawler:
     def __init__(self, start_url, max_retries=3, delay=1, max_workers=5):
@@ -20,6 +21,13 @@ class AdvancedWebCrawler:
         self.session = requests.Session()
         self._setup_logging()
         self.redis_storage = RedisStorage()
+        self.tech_patterns = {
+            'wordpress': r'wp-content|wp-includes',
+            'react': r'react\.production\.min\.js',
+            'angular': r'angular\.min\.js',
+            'bootstrap': r'bootstrap\.min\.css',
+            'jquery': r'jquery\.min\.js'
+        }
 
     def _setup_logging(self):
         """Configure logging for the crawler"""
@@ -64,13 +72,10 @@ class AdvancedWebCrawler:
 
         return list(internal_links), list(external_links)
 
-    async def check_url_health(self, url):
-        """Asynchronously check URL health"""
+    def check_url_health(self, url):
+        """Synchronously check URL health"""
         try:
-            response = await asyncio.get_event_loop().run_in_executor(
-                None, 
-                lambda: requests.head(url, timeout=5)
-            )
+            response = requests.head(url, timeout=5)
             return {
                 'url': url,
                 'status': response.status_code,
@@ -116,7 +121,21 @@ class AdvancedWebCrawler:
                     'top_words': dict(word_freq.most_common(10)),
                     'meta_tags': meta_tags,
                     'headers': dict(response.headers),
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': datetime.now().isoformat(),
+                    # New information
+                    'scripts': len(soup.find_all('script')),
+                    'stylesheets': len(soup.find_all('link', rel='stylesheet')),
+                    'forms': len(soup.find_all('form')),
+                    'social_links': self._get_social_links(soup),
+                    'responsive_meta': bool(soup.find('meta', {'name': 'viewport'})),
+                    'h1_count': len(soup.find_all('h1')),
+                    'text_to_html_ratio': self._calculate_text_ratio(soup),
+                    'languages': [lang.get('lang', 'unknown') for lang in soup.find_all('html', lang=True)],
+                    'seo_metrics': self._analyze_seo(soup, url),
+                    'security_headers': self._check_security_headers(response.headers),
+                    'performance_metrics': self._analyze_performance(soup, load_time),
+                    'accessibility': self._check_accessibility(soup),
+                    'technologies': self._detect_technologies(soup, response.text)
                 }
                 
                 self.logger.info(f"Successfully processed {url}")
@@ -128,6 +147,85 @@ class AdvancedWebCrawler:
                 if attempt == self.max_retries - 1:
                     return None
                 time.sleep(self.delay * (attempt + 1))  # Exponential backoff
+
+    def _get_social_links(self, soup):
+        """Extract social media links from the page"""
+        social_patterns = {
+            'facebook': r'facebook.com',
+            'twitter': r'twitter.com|x.com',
+            'linkedin': r'linkedin.com',
+            'instagram': r'instagram.com',
+            'youtube': r'youtube.com'
+        }
+        
+        social_links = {}
+        for link in soup.find_all('a', href=True):
+            href = link['href']
+            for platform, pattern in social_patterns.items():
+                if re.search(pattern, href, re.I):
+                    social_links[platform] = href
+        return social_links
+
+    def _calculate_text_ratio(self, soup):
+        """Calculate the ratio of text content to HTML"""
+        text_content = len(soup.get_text())
+        html_content = len(str(soup))
+        return round((text_content / html_content) * 100, 2) if html_content > 0 else 0
+
+    def _analyze_seo(self, soup, url):
+        """Analyze SEO elements"""
+        return {
+            'meta_description': bool(soup.find('meta', {'name': 'description'})),
+            'canonical_url': bool(soup.find('link', {'rel': 'canonical'})),
+            'robots_meta': bool(soup.find('meta', {'name': 'robots'})),
+            'sitemap_links': bool(soup.find('a', href=re.compile(r'sitemap\.xml'))),
+            'has_schema': bool(soup.find(attrs={"type": "application/ld+json"}))
+        }
+
+    def _check_security_headers(self, headers):
+        """Analyze security headers"""
+        security_headers = {
+            'X-Content-Type-Options': headers.get('X-Content-Type-Options', 'Not Set'),
+            'X-Frame-Options': headers.get('X-Frame-Options', 'Not Set'),
+            'X-XSS-Protection': headers.get('X-XSS-Protection', 'Not Set'),
+            'Content-Security-Policy': headers.get('Content-Security-Policy', 'Not Set'),
+            'Strict-Transport-Security': headers.get('Strict-Transport-Security', 'Not Set')
+        }
+        return security_headers
+
+    def _analyze_performance(self, soup, load_time):
+        """Analyze performance metrics"""
+        return {
+            'total_load_time': load_time,
+            'script_count': len(soup.find_all('script')),
+            'css_count': len(soup.find_all('link', rel='stylesheet')),
+            'image_size': sum(len(str(img)) for img in soup.find_all('img')),
+            'total_links': len(soup.find_all('a')),
+            'resource_hints': len(soup.find_all('link', rel=re.compile(r'preload|prefetch|preconnect')))
+        }
+
+    def _check_accessibility(self, soup):
+        """Check basic accessibility features"""
+        return {
+            'images_with_alt': len([img for img in soup.find_all('img') if img.get('alt')]),
+            'aria_landmarks': len(soup.find_all(attrs={"role": True})),
+            'form_labels': len(soup.find_all('label')),
+            'skip_links': bool(soup.find('a', href='#main-content')),
+            'language_specified': bool(soup.find('html', lang=True))
+        }
+
+    def _detect_technologies(self, soup, response_text):
+        """Detect technologies used on the website"""
+        technologies = {}
+        for tech, pattern in self.tech_patterns.items():
+            if re.search(pattern, response_text, re.I):
+                technologies[tech] = True
+        
+        # Additional framework detection
+        if soup.find('meta', {'name': 'generator'}):
+            technologies['cms'] = soup.find('meta', {'name': 'generator'})['content']
+        
+        return technologies
 
     def crawl(self, max_pages=5):
         """Crawl websites using ThreadPoolExecutor"""
@@ -163,14 +261,14 @@ class AdvancedWebCrawler:
                         self.logger.error(f"Error processing {url}: {str(e)}")
 
         # Perform health check on all visited URLs
-        asyncio.run(self._check_all_urls_health())
+        self._check_all_urls_health()
         self.save_results()
 
-    async def _check_all_urls_health(self):
-        """Check health of all visited URLs"""
+    def _check_all_urls_health(self):
+        """Check health of all visited URLs synchronously"""
         urls = [page['url'] for page in self.visited_pages]
-        tasks = [self.check_url_health(url) for url in urls]
-        health_results = await asyncio.gather(*tasks)
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            health_results = list(executor.map(self.check_url_health, urls))
         
         # Add health check results to visited pages
         for page, health in zip(self.visited_pages, health_results):
@@ -181,39 +279,3 @@ class AdvancedWebCrawler:
         crawl_id = self.redis_storage.store_crawl_data(self.start_url, self.visited_pages)
         self.logger.info(f"Results saved to Redis with crawl ID: {crawl_id}")
         return crawl_id
-
-def process_url(url):
-    try:
-        print(f"\nCrawling: {url}")
-        crawler = AdvancedWebCrawler(
-            url,
-            max_retries=3,
-            delay=1,
-            max_workers=5
-        )
-        crawler.crawl(max_pages=5)
-    except Exception as e:
-        print(f"Error crawling {url}: {str(e)}")
-
-def main():
-    # Read URLs from file
-    try:
-        with open('urls.txt', 'r') as f:
-            urls = [url.strip() for url in f.readlines() if url.strip()]
-    except FileNotFoundError:
-        print("Error: urls.txt not found")
-        return
-    except Exception as e:
-        print(f"Error reading file: {str(e)}")
-        return
-
-    if not urls:
-        print("No URLs found in file")
-        return
-
-    # Process URLs concurrently using ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        executor.map(process_url, urls)
-
-if __name__ == "__main__":
-    main()

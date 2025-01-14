@@ -1,68 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Crawl Results</title>
-        <style>
-            body {
-                background: #1a1a1a;
-                color: #fff;
-                font-family: system-ui, -apple-system, sans-serif;
-                max-width: 800px;
-                margin: 2rem auto;
-                padding: 0 1rem;
-            }
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crawl Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
 
-            .results-container {
-                background: #2d2d2d;
-                padding: 2rem;
-                border-radius: 8px;
-                box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-            }
+<body>
+    <nav class="nav-menu">
+        <h2>Web Crawler</h2>
+        <a href="{{ url_for('index') }}">New Scan</a>
+        <a href="{{ url_for('history') }}" {% if history %}class="active"{% endif %}>History</a>
+    </nav>
 
-            .metric {
-                background: #3d3d3d;
-                padding: 1rem;
-                margin: 1rem 0;
-                border-radius: 4px;
-                border-left: 4px solid #4a90e2;
-            }
-
-            .back-btn {
-                display: inline-block;
-                background: #4a90e2;
-                color: white;
-                padding: 0.5rem 1rem;
-                text-decoration: none;
-                border-radius: 4px;
-                margin-top: 1rem;
-            }
-
-            .glow {
-                text-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
-            }
-        </style>
-    </head>
-
-    <body>
+    <main class="content">
         <div class="results-container">
             <h1 class="glow">Crawl Results</h1>
+            
             <div class="metric">
-                <h3>URL</h3>
-                <p>{{ results.url }}</p>
-            </div>
-            <div class="metric">
-                <h3>Title</h3>
-                <p>{{ results.title }}</p>
-            </div>
-            <div class="metric">
-                <h3>Stats</h3>
-                <p>Words: {{ results.word_count }}</p>
-                <p>Images: {{ results.images_found }}</p>
+                <h3>Basic Information</h3>
+                <p>URL: {{ results.url }}</p>
+                <p>Title: {{ results.title }}</p>
                 <p>Load Time: {{ results.load_time }}s</p>
+                <p>Status Code: {{ results.status_code }}</p>
             </div>
+
+            <div class="metric">
+                <h3>Content Analysis</h3>
+                <p>Words: {{ results.word_count }}</p>
+                <p>Text/HTML Ratio: {{ results.text_to_html_ratio }}%</p>
+                <p>H1 Tags: {{ results.h1_count }}</p>
+                <p>Language: {{ results.languages[0] if results.languages else 'Not specified' }}</p>
+            </div>
+
+            <div class="metric">
+                <h3>Page Resources</h3>
+                <p>Images: {{ results.images_found }}</p>
+                <p>Scripts: {{ results.scripts }}</p>
+                <p>Stylesheets: {{ results.stylesheets }}</p>
+                <p>Forms: {{ results.forms }}</p>
+            </div>
+
+            <div class="metric">
+                <h3>Social Media Links</h3>
+                {% if results.social_links %}
+                    {% for platform, url in results.social_links.items() %}
+                    <p>{{ platform|title }}: <a href="{{ url }}" target="_blank">Link</a></p>
+                    {% endfor %}
+                {% else %}
+                    <p>No social media links found</p>
+                {% endif %}
+            </div>
+
             <div class="metric">
                 <h3>Top Words</h3>
                 <ul>
@@ -71,8 +62,59 @@
                     {% endfor %}
                 </ul>
             </div>
+
+            <div class="metric">
+                <h3>Mobile Optimization</h3>
+                <p>Responsive Meta Tag: {{ 'Yes' if results.responsive_meta else 'No' }}</p>
+            </div>
+
+            <div class="metric">
+                <h3>SEO Analysis</h3>
+                <p>Meta Description: {{ 'Yes' if results.seo_metrics.meta_description else 'No' }}</p>
+                <p>Canonical URL: {{ 'Yes' if results.seo_metrics.canonical_url else 'No' }}</p>
+                <p>Robots Meta: {{ 'Yes' if results.seo_metrics.robots_meta else 'No' }}</p>
+                <p>Sitemap Links: {{ 'Yes' if results.seo_metrics.sitemap_links else 'No' }}</p>
+                <p>Schema Markup: {{ 'Yes' if results.seo_metrics.has_schema else 'No' }}</p>
+            </div>
+
+            <div class="metric">
+                <h3>Security Headers</h3>
+                {% for header, value in results.security_headers.items() %}
+                <p>{{ header }}: {{ value }}</p>
+                {% endfor %}
+            </div>
+
+            <div class="metric">
+                <h3>Performance Metrics</h3>
+                <p>Load Time: {{ results.performance_metrics.total_load_time }}s</p>
+                <p>Scripts: {{ results.performance_metrics.script_count }}</p>
+                <p>Stylesheets: {{ results.performance_metrics.css_count }}</p>
+                <p>Resource Hints: {{ results.performance_metrics.resource_hints }}</p>
+            </div>
+
+            <div class="metric">
+                <h3>Accessibility Check</h3>
+                <p>Images with Alt Text: {{ results.accessibility.images_with_alt }}</p>
+                <p>ARIA Landmarks: {{ results.accessibility.aria_landmarks }}</p>
+                <p>Form Labels: {{ results.accessibility.form_labels }}</p>
+                <p>Skip Links: {{ 'Yes' if results.accessibility.skip_links else 'No' }}</p>
+                <p>Language Specified: {{ 'Yes' if results.accessibility.language_specified else 'No' }}</p>
+            </div>
+
+            <div class="metric">
+                <h3>Technologies Detected</h3>
+                {% if results.technologies %}
+                    {% for tech, value in results.technologies.items() %}
+                    <p>{{ tech|title }}: {{ value if value is string else 'Detected' }}</p>
+                    {% endfor %}
+                {% else %}
+                    <p>No specific technologies detected</p>
+                {% endif %}
+            </div>
+
             <a href="{{ url_for('index') }}" class="back-btn">⬅ Back</a>
         </div>
-    </body>
+    </main>
+</body>
 
 </html>

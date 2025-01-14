@@ -94,3 +94,19 @@ class RedisStorage:
             'summary': summary,
             'page_data': pages
         }
+
+    def delete_crawl_data(self, crawl_id):
+        """Delete crawl data from Redis"""
+        # Remove all pages
+        page_keys = self.redis_client.lrange(f"{crawl_id}:pages", 0, -1)
+        for page_key in page_keys:
+            self.redis_client.delete(page_key)
+        
+        # Remove pages list
+        self.redis_client.delete(f"{crawl_id}:pages")
+        
+        # Remove summary
+        self.redis_client.delete(f"{crawl_id}:summary")
+        
+        # Remove from all_crawls list
+        self.redis_client.lrem("all_crawls", 0, crawl_id)
