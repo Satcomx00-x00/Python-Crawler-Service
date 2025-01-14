@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Crawl Results</title>
+        <style>
+            body {
+                background: #1a1a1a;
+                color: #fff;
+                font-family: system-ui, -apple-system, sans-serif;
+                max-width: 800px;
+                margin: 2rem auto;
+                padding: 0 1rem;
+            }
+
+            .results-container {
+                background: #2d2d2d;
+                padding: 2rem;
+                border-radius: 8px;
+                box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            }
+
+            .metric {
+                background: #3d3d3d;
+                padding: 1rem;
+                margin: 1rem 0;
+                border-radius: 4px;
+                border-left: 4px solid #4a90e2;
+            }
+
+            .back-btn {
+                display: inline-block;
+                background: #4a90e2;
+                color: white;
+                padding: 0.5rem 1rem;
+                text-decoration: none;
+                border-radius: 4px;
+                margin-top: 1rem;
+            }
+
+            .glow {
+                text-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="results-container">
+            <h1 class="glow">Crawl Results</h1>
+            <div class="metric">
+                <h3>URL</h3>
+                <p>{{ results.url }}</p>
+            </div>
+            <div class="metric">
+                <h3>Title</h3>
+                <p>{{ results.title }}</p>
+            </div>
+            <div class="metric">
+                <h3>Stats</h3>
+                <p>Words: {{ results.word_count }}</p>
+                <p>Images: {{ results.images_found }}</p>
+                <p>Load Time: {{ results.load_time }}s</p>
+            </div>
+            <div class="metric">
+                <h3>Top Words</h3>
+                <ul>
+                    {% for word, count in results.top_words.items() %}
+                    <p>{{ word }}: {{ count }}</p>
+                    {% endfor %}
+                </ul>
+            </div>
+            <a href="{{ url_for('index') }}" class="back-btn">⬅ Back</a>
+        </div>
+    </body>
+
+</html>
