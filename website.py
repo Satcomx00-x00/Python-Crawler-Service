@@ -3,10 +3,8 @@ from flask import Flask, render_template, request, redirect, url_for
 import re
 from main import AdvancedWebCrawler
 from redis_storage import RedisStorage
-import asyncio
 from urllib.parse import quote, unquote
 from redis.exceptions import ConnectionError
-import sys
 
 app = Flask(__name__)
 redis_storage = None

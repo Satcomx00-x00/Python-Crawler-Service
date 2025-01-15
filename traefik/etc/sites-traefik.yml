@@ -4,16 +4,16 @@ http:
     site-rtr:
       rule: Host(`site.satcom-server.com`)
       entryPoints: [websecure]
-      # middlewares: [https-redirect]
+      #middlewares: [https-redirect]
       service: site-svc
       tls:
         certresolver: le
         domains:
           - main: site.satcom-server.com
 
-  serversTransports:
-    pve:
-      insecureSkipVerify: true
+  # serversTransports:
+  #   pve:
+  #     insecureSkipVerify: true
 
   services:
     site-svc:

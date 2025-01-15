@@ -1,11 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
 import time
-import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin, urlparse
-import asyncio
 from collections import Counter
 from datetime import datetime
 from redis_storage import RedisStorage

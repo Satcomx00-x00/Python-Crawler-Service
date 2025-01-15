@@ -18,7 +18,6 @@ class RedisStorage:
         retry_delay = int(os.getenv('REDIS_RETRY_DELAY', 1))
         default_port = 6379
         
-        # Try to get port from environment, with better error handling
         redis_port = int(os.getenv('REDIS_PORT', default_port))
         
         redis_hosts = [
