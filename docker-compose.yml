@@ -30,7 +30,9 @@ services:
 
 
   crawler:
-    image: satcomx00/python-crawler:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - 81:5000
     deploy:
