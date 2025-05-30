@@ -78,12 +78,22 @@ Python-Crawler-Service/
 
 ### Docker Deployment
 
-1. **Build and start services:**
+1. **Build the Docker image:**
+   ```bash
+   docker-compose build
+   ```
+
+2. **Start all services:**
    ```bash
    docker-compose up -d
    ```
 
-2. **Access the application:**
+   Or combine both steps:
+   ```bash
+   docker-compose build && docker-compose up -d
+   ```
+
+3. **Access the application:**
    - Web interface: http://localhost:81
    - Traefik dashboard: http://localhost:8080
 
